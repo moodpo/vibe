@@ -1,18 +1,26 @@
+import { openai, createAgent } from "@inngest/agent-kit";
+
 import { inngest } from "./client";
 
 export const helloWorld = inngest.createFunction(
   { id: "hello-world" },
   { event: "test/hello.world" },
-  async ({ event, step }) => {
-    // 这是一个下载任务
-    await step.sleep("download", "30s");
+  async ({ event }) => {
+    const codeAgent = createAgent({
+      name: "code-agent",
+      system: "You are an expert next.js developer. You write readable, maintainable code. You write simple Next.js & React snippets.",
+      model: openai({
+        baseUrl: "https://api.deepseek.com",
+        // model: "deepseek-reasoner",
+        model: "deepseek-chat",
+        apiKey: process.env.DEEPSEEK_API_KEY,
+      }),
+    });
 
-    // 这是一个转换步骤
-    await step.sleep("convert", "10s");
+    const { output } = await codeAgent.run(
+      `Write the following snippet: ${event.data.value}`
+    );
 
-    // 这是一个总结任务
-    await step.sleep("summarize", "5s");
-
-    return { message: `Hello ${event.data.email}!` };
-  },
+    return { output };
+  }
 );
